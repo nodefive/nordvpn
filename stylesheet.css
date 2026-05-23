@@ -1,0 +1,13 @@
+.statuslabel {
+    padding: 0px 24px;
+}
+
+.updatelabel {
+    padding: 5px 10px 0 24px;
+    font-size: smaller;
+    color: yellowgreen;
+}
+
+.popup-menu-item .ci-action-btn StIcon {
+    icon-size:16px;
+}

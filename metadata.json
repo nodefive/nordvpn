@@ -1,0 +1,14 @@
+{
+  "description": "A Gnome extension to control NordVPN from the panel.",
+  "name": "NordVPN",
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/nodefive/nordvpn",
+  "uuid": "nordvpn@unl0cker",
+  "version": "2.01"
+}
