@@ -17,7 +17,7 @@ export default class ResetManager {
     }
 
     _resetGeneralSetting(settings) {
-        this._resetSetting(settings, ['autoconnect', 'commonfavorite']);
+        this._resetSetting(settings, ['autoconnect']);
     }
 
     _resetAccountSetting(settings) {

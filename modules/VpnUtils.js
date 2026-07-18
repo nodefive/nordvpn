@@ -1,12 +1,37 @@
 export default class VpnUtils {
     // Remove the junk that shows up from messages in the nordvpn output
     processCityCountryOutput = (input) => {
-        input = input.replace(/\e\[\d+[\x6d]/, ''); // Remove color formatting
-        input = input.replace(/^[\W_]+|\W+/, '\n'); // Remove any leading junk
-        const countries = input.split('\n').map(c => c.trim()); // Split and trim each country name
-        const validCountries = countries.filter(c => /\b\w[\w\s'-]*\b/.test(c)); // Keep valid country names
-        const filteredLines = validCountries.filter(line => !line.includes('Virtual location servers'));
-        return filteredLines.sort(); // Sort and return the valid country names
+        // Remove ANSI escape codes / color formatting
+        input = input.replace(/[\u001b\x1b]\[[0-9;]*[a-zA-Z]/g, '');
+
+        const lines = input.split(/\r?\n/);
+        const items = [];
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+
+            // Skip lines containing update/upgrade messages or virtual location servers
+            if (line.includes('Virtual location servers') || line.includes('update') || line.includes('new version')) {
+                continue;
+            }
+
+            // Split the line by 2 or more spaces (column separators)
+            const parts = line.split(/\s{2,}/);
+            for (const part of parts) {
+                const trimmed = part.trim();
+                // Remove any leading non-word characters like "-  -  " or other punctuation at the beginning of the item
+                const cleaned = trimmed.replace(/^[\W_]+/, '');
+                if (cleaned) {
+                    items.push(cleaned);
+                }
+            }
+        }
+
+        // Keep valid names matching the pattern (words, spaces, hyphens, apostrophes)
+        const validItems = items.filter(c => /\b\w[\w\s'-]*\b/.test(c));
+
+        return validItems.sort();
     };
 
     getString = (data) => {

@@ -11,7 +11,6 @@ import Vpn from './Vpn.js';
 import Signals from './Signals.js';
 import CascadingCountryMenu from './CascadingCountryMenu.js';
 import StateManager from './StateManager.js';
-import CommonFavorite from './CommonFavorite.js';
 import PanelIcon from './PanelIcon.js';
 import * as Constants from './constants.js';
 import Logger from './Logger.js';
@@ -41,7 +40,6 @@ export default GObject.registerClass(
         _vpn = null;
         _signals = null;
         _settingsChangedId = null;
-        _commonFavorite = null;
         _cascadingCountryMenu = null;
         _panelIcon = null;
 
@@ -70,17 +68,10 @@ export default GObject.registerClass(
                         this._panelIcon.updateStyle();
                         this._refresh();
                         break;
-                    case `favorite-countries`:
-                        this._commonFavorite.updateFavorite();
-                        break;
                     case `showlogin`:
                     case `showlogout`:
                         this._refresh();
                         break;
-                    case `commonfavorite`: {
-                        this._commonFavorite.showHide(settings.get_boolean(`commonfavorite`));
-                        break;
-                    }
                 }
             });
         }
@@ -221,7 +212,6 @@ export default GObject.registerClass(
             this._disconnectMenuItem.actor.visible = status.currentState.canDisconnect;
 
             this._cascadingCountryMenu.showHide(status.currentState.showLists);
-            this._commonFavorite.showHide(status.currentState.showLists && this._extSettings.get_boolean(`commonfavorite`));
 
             this._loginMenuItem.actor.visible = !status.loggedin && this._extSettings.get_boolean(`showlogin`);
             this._logoutMenuItem.actor.visible = status.loggedin && this._extSettings.get_boolean(`showlogout`);
@@ -301,12 +291,6 @@ export default GObject.registerClass(
                 this._signals.register(disconnectMenuItemClickId, () => this._disconnectMenuItem.disconnect(disconnectMenuItemClickId));
                 this.menu.addMenuItem(this._disconnectMenuItem);
 
-                this._commonFavorite.build();
-                this.menu.addMenuItem(this._commonFavorite.menu);
-
-                if (this._extSettings.get_boolean(`commonfavorite`)) this._commonFavorite.menu.show();
-                else this._commonFavorite.menu.hide();
-
                 // running=false: nordvpnd state not yet known; menu populates on first _throttledMenuBuild.
                 this._cascadingCountryMenu.tryBuild(false).catch(e => this._log.error('cascadingCountryMenu build failed', e));
                 this.menu.addMenuItem(this._cascadingCountryMenu.menu);
@@ -383,7 +367,6 @@ export default GObject.registerClass(
                 this._connectChanged();
                 this._vpn = new Vpn(this._extSettings);
                 this._signals = new Signals();
-                this._commonFavorite = new CommonFavorite(this._overrideRefresh.bind(this), this._extSettings);
                 this._cascadingCountryMenu = new CascadingCountryMenu(this._overrideRefresh.bind(this), this._extSettings);
                 this._panelIcon = new PanelIcon(this._extSettings);
 
@@ -418,8 +401,6 @@ export default GObject.registerClass(
             // Reset so the next enable() gets an immediate throttledMenuBuild on first refresh
             this._lastMenuBuild = null;
 
-            this._commonFavorite.disable();
-            this._commonFavorite.isAdded = false;
             this._cascadingCountryMenu.disable();
             this._signals.disconnectAll();
 
@@ -428,7 +409,6 @@ export default GObject.registerClass(
                 this._settingsChangedId = null;
             }
 
-            this._commonFavorite = null;
             this._cascadingCountryMenu = null;
             this._vpn = null;
             this._signals = null;

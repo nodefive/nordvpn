@@ -89,18 +89,7 @@ export default class GnordVpnPrefs {
             this._settings.set_string('panel-position', newPosition);
         });
 
-        // Common Favorite Toggle
-        const commonFavLabel = new Gtk.Label({label: "Display a common favorite tab:", halign: Gtk.Align.START});
-        const commonFavToggle = new Gtk.Switch({
-            active: this._settings.get_boolean(`commonfavorite`),
-            halign: Gtk.Align.START,
-            visible: true
-        });
-        this._settings.bind(`commonfavorite`, commonFavToggle, `active`, Gio.SettingsBindFlags.DEFAULT);
 
-        commonFavToggle.set_hexpand(false);  // Don't expand horizontally
-        generalGrid.attach(commonFavLabel, 0, 2, 1, 1);
-        generalGrid.attach(commonFavToggle, 1, 2, 1, 1);
 
         // Timer Refresh
         const timerRefreshLabel = new Gtk.Label({
