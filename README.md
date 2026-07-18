@@ -1,177 +1,100 @@
-# NordVPN
+# NordVPN GNOME Shell Extension
 
-A GNOME Shell extension to control NordVPN from the panel.
+A GNOME Shell extension that provides panel controls and state indicators for the NordVPN Linux CLI.
 
 ## Requirements
 
-- GNOME Shell 46 or later (tested through 50)
-- [NordVPN Linux CLI](https://nordvpn.com/download/linux/) installed and configured
-- The `nordvpn` command must be available in your `PATH`
+- GNOME Shell version 46 or later (tested up to 50)
+- NordVPN Linux CLI client installed and configured
+- The `nordvpn` executable available in the system PATH
 
 ## Installation
 
-### Manual installation
+### Manual Installation
 
-1. Clone or download this repository.
-2. Copy the extension folder to your GNOME extensions directory:
+1. Copy the extension directory to your GNOME Shell extensions path:
 
    ```bash
    cp -r nordvpn@unl0cker ~/.local/share/gnome-shell/extensions/
    ```
 
-3. Compile the GSettings schema:
+2. Compile the GSettings schemas for the extension:
 
    ```bash
    glib-compile-schemas ~/.local/share/gnome-shell/extensions/nordvpn@unl0cker/schemas/
    ```
 
-4. Restart GNOME Shell:
-   - On X11: press `Alt + F2`, type `r`, press `Enter`.
-   - On Wayland: log out and log back in.
+3. Restart your GNOME Shell environment:
+   - Under X11: Press `Alt + F2`, type `r`, and press `Enter`.
+   - Under Wayland: Log out and log back in to your session.
 
-5. Enable the extension using GNOME Extensions app or:
-
-   ```bash
-   gnome-extensions enable nordvpn@unl0cker
-   ```
+4. Enable the extension:
+   - Via the GNOME Extensions application, or
+   - By running:
+     ```bash
+     gnome-extensions enable nordvpn@unl0cker
+     ```
 
 ## Features
 
-### Panel indicator
+### Panel Indicator
+- Top-bar button showing the current VPN status (e.g., Connected, Connecting, Disconnected, Error, Logged Out).
+- Displays country and server number when connected.
+- Customizable panel label styles and background colors for each connection state via settings.
 
-A labeled button appears in the GNOME top bar showing the current VPN state. The label text and background color change per state, making it easy to see your connection status at a glance without opening the menu.
+### Dropdown Menu
+- **Status details**: Expandable panel showing the country, city, server name/IP, transfer details, and uptime when connected.
+- **Connection controls**: Quick connect and disconnect toggles.
+- **Submenus**: Location submenus for countries and cities fetched from the NordVPN API.
+- **Preferences**: Access the settings page directly from the dropdown.
+- **Account management**: Configurable quick-login and logout buttons.
 
-Default panel label styles:
+### Automated Connection
+- Option to automatically connect to VPN when the extension loads if it is currently disconnected.
 
-| State       | Label text        | Background color       |
-|-------------|-------------------|------------------------|
-| Connected   | Country + server  | Green                  |
-| Connecting  | CONNECTING        | Amber                  |
-| Disconnected| DISCONNECTED      | Red                    |
-| Logged out  | LOGGED OUT        | Blue                   |
-| Error       | ERROR             | Red                    |
+## Configuration
 
-All label text and CSS styles are fully customizable from the preferences window.
-
-### Panel menu
-
-Clicking the indicator opens a dropdown menu with:
-
-- **Status popup** — expandable item showing Country, City, Current server, Server IP, Transfer, and Uptime when connected.
-- **Update available** notice — shown inline when the NordVPN CLI reports a newer version.
-- **Connect / Disconnect** — one-click connection control.
-- **Common Favorite** — quick-connect to a single configured favorite (optional, can be hidden).
-- **Countries / Cities / Servers** — cascading submenu for browsing and connecting to specific locations. The country list is fetched from the NordVPN API and cached; the submenu rebuilds at most every 30 seconds to avoid excessive API calls.
-- **Settings** — opens the preferences window.
-- **Login / Logout** — authenticate or de-authenticate with NordVPN; visibility of each item is individually configurable.
-
-### Auto-connect on startup
-
-If the extension-level autoconnect setting is enabled and NordVPN is disconnected when the extension loads, it will automatically trigger a connection. This supplements NordVPN's own autoconnect for cases where the daemon starts after login.
-
-### Favorites
-
-Three types of favorites can be saved from the preferences window:
-
-- Favorite countries
-- Favorite cities
-- Favorite servers
-
-Favorites appear in the panel menu for fast one-click connection.
-
-## Preferences
-
-Open the preferences window from the menu (`Settings` item) or via GNOME Extensions.
+Settings can be managed via the Preferences panel in GNOME Extensions or the GNOME Extensions App.
 
 ### Connection
+- **Auto-connect**: Toggles automatically connecting on startup.
+- **Protocol**: Choice between UDP or TCP (for OpenVPN).
+- **Technology**: Switch between OpenVPN and NordLynx (WireGuard).
 
-| Setting | Description |
-|---|---|
-| Auto-connect | Automatically connect when the extension enables |
-| Protocol | UDP or TCP (OpenVPN only) |
-| Technology | OpenVPN or NordLynx (WireGuard) |
+### NordVPN CLI Settings
+Synchronizes daemon settings directly using the NordVPN command-line interface:
+- Firewall configuration
+- Kill switch toggle
+- CyberSec / Threat Protection Lite
+- Traffic obfuscation (OpenVPN only)
+- Notification toggles
+- System analytics
+- IPv6 support
 
-### VPN settings
-
-These are written directly to the NordVPN daemon via the CLI:
-
-| Setting | Description |
-|---|---|
-| Firewall | Enable the NordVPN firewall |
-| Kill Switch | Block traffic if the VPN drops |
-| CyberSec | Block ads and malicious sites |
-| Obfuscate | Hide VPN traffic (OpenVPN only) |
-| Notify | Desktop notifications from NordVPN |
-| Analytics | Send anonymous analytics to NordVPN |
-| IPv6 | Enable IPv6 support |
-
-### Panel appearance
-
-| Setting | Description |
-|---|---|
-| Panel position | Left, center, or right section of the top bar |
-| Common panel style | Base CSS applied to the indicator label for all states |
-| Per-state styles | Individual label text and CSS for each connection state |
-
-The label text for the Connected state supports the placeholders `{country}` and `{number}` (server number), for example: `{country} #{number}`.
-
-### Menu visibility
-
-| Setting | Description |
-|---|---|
-| Show Login | Show the Login item in the menu |
-| Show Logout | Show the Logout item in the menu |
-
-### Countries and cities
-
-Configure which countries and cities appear in the panel submenu:
-
-| Setting | Description |
-|---|---|
-| Countries in menu | Countries shown in the cascading country list |
-| Countries for cities | Countries whose cities are fetched and listed |
-| Max cities per country | Maximum city entries shown per country |
-| Countries for servers | Countries whose recommended servers are fetched |
-| Max servers per country | Maximum server entries shown per country |
-
-### Refresh
-
-| Setting | Description |
-|---|---|
-| Refresh timeout | How often (in seconds, 1–120) the extension polls `nordvpn status` |
-
-The extension uses adaptive refresh: the interval shortens automatically during state transitions (connecting, disconnecting) and backs off exponentially if the CLI is unreachable.
+### Interface Customization
+- **Panel Position**: Choose to place the indicator in the left, center, or right section of the top panel.
+- **State Styling**: Define Custom CSS rules and label text templates for each VPN state (using placeholders like `{country}` and `{number}`).
+- **Menu Items Visibility**: Toggle the login and logout buttons.
+- **Adaptive Refresh**: Polling timeout settings (1–120 seconds) for `nordvpn status` requests. The extension automatically defaults to a higher refresh frequency during status transitions.
 
 ## Troubleshooting
 
-**The indicator is not visible.**
-Make sure the extension is enabled and GNOME Shell has been restarted after installation.
+### Indicator does not appear
+Verify that the extension is enabled in your system settings and GNOME Shell has been restarted.
 
-**Status shows ERROR or nothing refreshes.**
-Check that the NordVPN daemon is running:
-
+### Status is stuck on ERROR
+Ensure the NordVPN daemon is running on your system:
 ```bash
 systemctl status nordvpnd
 ```
-
-Start it if needed:
-
+Start the service if necessary:
 ```bash
 sudo systemctl start nordvpnd
 ```
 
-**Login opens no browser window.**
-NordVPN generates a login URL and attempts to open it with the system default browser. Ensure a default browser is set.
-
-**Settings changes are not applied to the daemon.**
-Settings are synced to the daemon when the preferences window is saved. If the daemon is not running at that moment, the changes are stored locally and applied on the next save.
+### Browser does not open on login
+NordVPN CLI triggers your default browser to complete login authentication. Check that a system default browser is correctly registered.
 
 ## License
 
-MIT License — Copyright (c) 2025 nodefive
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+MIT License - Copyright (c) 2025 nodefive. See the LICENSE file for details.
