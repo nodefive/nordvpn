@@ -298,10 +298,15 @@ export default class Vpn {
         if (_loginInFlight) return;
         _loginInFlight = true;
         try {
-            const standardOut = await this._procCom.execCommunicateAsync(CMD_LOGIN);
+            // "n" answers NordVPN 6's analytics consent question, asked once
+            // before the first login; without an answer the CLI never ends.
+            const standardOut = await this._procCom.execBoundedAsync(CMD_LOGIN, {input: 'n\n'});
             const ref = `Continue in the browser: `;
-            let url = standardOut.replace(/\s+/g, ` `);
-            url = url.substring(url.indexOf(ref) + ref.length).trim();
+            const text = standardOut.replace(/\s+/g, ` `);
+            const at = text.indexOf(ref);
+            if (at < 0)
+                throw new Error(`no login URL from nordvpn login: ${text.slice(0, 200)}`);
+            const url = text.substring(at + ref.length).trim().split(` `)[0];
             Gio.app_info_launch_default_for_uri(url, null);
         } finally {
             _loginInFlight = false;
