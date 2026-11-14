@@ -119,7 +119,8 @@ export default class StateManager {
 
     resolveState(status) {
         let vpnState = (status && this.states[status.connectStatus]) || this.states.ERROR;
-        if (status && !status.loggedin) vpnState = this.states['LOGGED OUT'];
+        // Only a confirmed logout (false) shows the logged-out state; null means "not known yet".
+        if (status && status.loggedin === false) vpnState = this.states['LOGGED OUT'];
 
         // If a state override is active, increment it and override the state if appropriate
         if (status && this.stateOverride) {

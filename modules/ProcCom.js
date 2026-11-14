@@ -30,7 +30,13 @@ export default class ProcCom {
         const [stdout, stderr] = await proc.communicate_utf8_async(null, null);
         const success = proc.get_successful();
         this._log.endTimer(t, 'CALL', {cmd, blocking: false, success});
-        if (!success) throw new Error(stderr);
+        if (!success) {
+            // nordvpn prints most errors on stdout; keep both so callers can tell them apart.
+            const err = new Error(stderr || stdout);
+            err.stdout = stdout;
+            err.stderr = stderr;
+            throw err;
+        }
         return stdout;
     }
 

@@ -190,20 +190,26 @@ export default class Vpn {
         return {emailAddress, vpnService};
     }
 
+    // Returns true (logged in), false (nordvpn says not logged in) or null (unknown:
+    // daemon unreachable, network down after resume, API error). Only an explicit
+    // "not logged in" answer counts as logged out, so a check that runs before the
+    // network is up does not leave the panel stuck in the logged-out state.
     async checkLogin() {
         try {
             await this._procCom.execCommunicateAsync(CMD_VPNACCOUNT);
             this._log.debug('checkLogin', {loggedIn: true});
             return true;
         } catch (e) {
-            // execCommunicateAsync throws new Error(stderr) when nordvpn exits non-zero
-            // (not logged in). GIO spawn failures throw a GLib.Error with a numeric .code
-            // property — re-throw those so callers can surface real infrastructure errors.
-            if (e instanceof Error && e.code === undefined) {
+            // GIO spawn failures throw a GLib.Error with a numeric .code property —
+            // re-throw those so callers can surface real infrastructure errors.
+            if (!(e instanceof Error) || e.code !== undefined) throw e;
+            const output = `${e.stdout ?? ''}\n${e.stderr ?? e.message ?? ''}`;
+            if (/not logged in/i.test(output)) {
                 this._log.debug('checkLogin', {loggedIn: false});
                 return false;
             }
-            throw e;
+            this._log.debug('checkLogin', {loggedIn: null, error: output.trim().slice(0, 200)});
+            return null;
         }
     }
 

@@ -18,7 +18,9 @@ import Logger from './Logger.js';
 export default GObject.registerClass(
     class VpnIndicator extends PanelMenu.Button {
         _log = new Logger('VpnIndicator');
-        _isLoggedIn = false;
+        _isLoggedIn = null;          // true / false / null = unknown (re-checked in _refresh)
+        _lastLoginCheck = 0;
+        _recheckLoginUntil = 0;      // keep re-checking until this time (after Login / Logout)
         _isRefreshing = false;
         _isDestroyed = false;
         _pendingLoginCheck = false;
@@ -98,6 +100,17 @@ export default GObject.registerClass(
                 const t = this._log.startTimer();
                 const status = await this._vpn.getStatus();
                 if (this._isDestroyed) return;
+                // Login state unknown (e.g. checked while the network was still down after
+                // resume) or a login/logout just started: re-check, at most every 15 s.
+                // `nordvpn account` queries a rate-limited API, so this stops as soon as
+                // the answer is definite.
+                if (status.running && this._needsLoginCheck()) {
+                    this._lastLoginCheck = Date.now();
+                    const loggedIn = await this._vpn.checkLogin().catch(() => null);
+                    if (this._isDestroyed) return;
+                    if (loggedIn !== null) this._isLoggedIn = loggedIn;
+                    if (loggedIn === true) this._recheckLoginUntil = 0;
+                }
                 status.loggedin = this._isLoggedIn;
                 // Use the running flag returned by getStatus() (derived from exit code)
                 // instead of a second isNordVpnRunning() call to avoid duplicate CLI invocations.
@@ -143,6 +156,12 @@ export default GObject.registerClass(
             }
         }
 
+        _needsLoginCheck() {
+            const now = Date.now();
+            if (now - this._lastLoginCheck < 15_000) return false;
+            return this._isLoggedIn === null || now < this._recheckLoginUntil;
+        }
+
         _throttledMenuBuild(status) {
             if ((Date.now() - this._lastMenuBuild) <= 30_000) {
                 this._log.debug('throttledMenuBuild skipped (within 30s window)');
@@ -185,7 +204,7 @@ export default GObject.registerClass(
                     }
                 })
 
-                if (!this._isLoggedIn) {
+                if (this._isLoggedIn === false) {
                     this._statusPopup.hide();
                     this._statusLabel.hide();
                 } else if (hasItems) {
@@ -213,8 +232,8 @@ export default GObject.registerClass(
 
             this._cascadingCountryMenu.showHide(status.currentState.showLists);
 
-            this._loginMenuItem.actor.visible = !status.loggedin && this._extSettings.get_boolean(`showlogin`);
-            this._logoutMenuItem.actor.visible = status.loggedin && this._extSettings.get_boolean(`showlogout`);
+            this._loginMenuItem.actor.visible = status.loggedin === false && this._extSettings.get_boolean(`showlogin`);
+            this._logoutMenuItem.actor.visible = status.loggedin === true && this._extSettings.get_boolean(`showlogout`);
         }
 
         async _connect() {
@@ -234,6 +253,9 @@ export default GObject.registerClass(
         }
 
         async _login() {
+            // The login finishes in the browser: keep re-checking for 5 minutes.
+            this._recheckLoginUntil = Date.now() + 300_000;
+            this._lastLoginCheck = 0;
             if (!this._isDestroyed) this._overrideRefresh(Constants.status.login);
             await this._vpn.loginVpn().catch(e => {
                 this._log.error('loginVpn failed', e);
@@ -244,6 +266,8 @@ export default GObject.registerClass(
 
         async _logout() {
             await this._vpn.logoutVpn();
+            this._isLoggedIn = null;            // confirm the logout on the next refresh
+            this._lastLoginCheck = 0;
             if (!this._isDestroyed) this._overrideRefresh(Constants.status.logout);
         }
 
@@ -326,10 +350,11 @@ export default GObject.registerClass(
                     // _pendingLoginCheck ensures only one idle is queued even on rapid clicks.
                     if (!this._pendingLoginCheck) {
                         this._pendingLoginCheck = true;
+                        this._lastLoginCheck = Date.now();
                         this._vpn.checkLogin().then(loggedIn => {
                             this._pendingLoginCheck = false;
                             if (this._isDestroyed) return;
-                            this._isLoggedIn = loggedIn;
+                            if (loggedIn !== null) this._isLoggedIn = loggedIn;
                             if (this._isRefreshing) this._pendingLoginRefresh = true;
                             else this._refresh();
                         }).catch(e => {
@@ -376,7 +401,10 @@ export default GObject.registerClass(
                     this._vpn.setSettingsFromNord().catch(e => this._log.error('setSettingsFromNord failed', e));
                     // Await login check so the first refresh renders the correct state immediately
                     // instead of briefly flashing the logged-out UI.
-                    this._isLoggedIn = await this._vpn.checkLogin().catch(() => false);
+                    // null (unknown) when the check runs before the network is up, e.g. right
+                    // after resume; _refresh() then keeps re-checking until it is known.
+                    this._lastLoginCheck = Date.now();
+                    this._isLoggedIn = await this._vpn.checkLogin().catch(() => null);
                     if (this._isDestroyed) return;
                     await this._refresh().catch(e => this._log.error('unable to refresh', e));
                     this._log.endTimer(t, 'SPAN', {operation: 'enable'});

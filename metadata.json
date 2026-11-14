@@ -6,8 +6,10 @@
     "47",
     "48",
     "49",
-    "50"
+    "50",
+    "51"
   ],
+  "settings-schema": "org.gnome.shell.extensions.gnordvpn-local",
   "url": "https://github.com/nodefive/nordvpn",
   "uuid": "nordvpn@unl0cker",
   "version": "2.01"
