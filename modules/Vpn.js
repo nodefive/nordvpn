@@ -286,10 +286,14 @@ export default class Vpn {
         this._lastConnectedAt = Date.now();
 
         if (query) {
+            // Point autoconnect at the chosen server only when the user enabled it;
+            // otherwise every connect would switch the daemon's autoconnect on.
             // Best-effort: autoconnect updates may fail for some query types but
             // nordvpn c <query> can still succeed, so don't abort on these errors.
-            try { await this._procCom.execCommunicateAsync(CMD_AUTOCONNECT_OFF); } catch (e) { this._log.debug('autoconnect off failed', {error: String(e)}); }
-            try { await this._procCom.execCommunicateAsync(`${CMD_AUTOCONNECT_ON} ${query}`); } catch (e) { this._log.debug('autoconnect on failed', {error: String(e)}); }
+            if (this._settings.get_boolean(`autoconnect`)) {
+                try { await this._procCom.execCommunicateAsync(CMD_AUTOCONNECT_OFF); } catch (e) { this._log.debug('autoconnect off failed', {error: String(e)}); }
+                try { await this._procCom.execCommunicateAsync(`${CMD_AUTOCONNECT_ON} ${query}`); } catch (e) { this._log.debug('autoconnect on failed', {error: String(e)}); }
+            }
             return this._procCom.execCommunicateAsync(`${CMD_CONNECT} ${query}`);
         } else {
             return this._procCom.execCommunicateAsync(CMD_CONNECT);
