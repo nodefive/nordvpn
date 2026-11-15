@@ -494,11 +494,13 @@ export default class GnordVpnPrefs {
 
     _populateCountryTree(countries, treeView, iterMap, store) {
         const selected = this._settings.get_value('countries-in-menu').deep_unpack();
-        store.clear();
-        // Clear the iterMap before repopulating
-        Object.keys(iterMap).forEach(k => delete iterMap[k]);
+        // Set before clear(): removing selected rows emits 'changed' with an empty
+        // selection, which would otherwise overwrite countries-in-menu with [].
         this._countryMenuPopulating = true;
         try {
+            store.clear();
+            // Clear the iterMap before repopulating
+            Object.keys(iterMap).forEach(k => delete iterMap[k]);
             countries.forEach(country => {
                 const iter = store.append(null);
                 store.set(iter, [0], [country]);
